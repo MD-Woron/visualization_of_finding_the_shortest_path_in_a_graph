@@ -1,0 +1,34 @@
+<Menu>:
+    BoxLayout:
+        Button:
+            id: go_graph
+            text: 'go'
+            on_release:
+                root.manager.transition.direction = 'left'
+                root.manager.current = 'field'
+        Button:
+            text: 'nothing'
+<field>:
+    RelativeLayout:
+        BoxLayout:
+            id: DoneLayout
+            size_hint: (1, 0.1)
+            pos: (0, 0)
+            pos_hint:{"left":1,"top":1}
+            orientation: 'horizontal'
+            Button:
+                text: 'Choose start pos, then end pos, then walls, then press me'
+                on_release:
+                    root.Choose_Algorithm(DoneLayout)
+        GridLayout:
+            id: ButtonLayout
+            size_hint: (1,0.9)
+            pos:(1,1)
+            rows: 18
+            cols: 32
+            Button:
+                text: 'Init Buttons'
+                on_release:
+                    root.init_buttons(ButtonLayout)
+
+
