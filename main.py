@@ -23,7 +23,7 @@ class field(Screen):
     buttons = {}
     start_pos = 0
     end_pos = 0
-
+    matrix = []
     queue = []
     using = set()
     is_false = 1
@@ -63,6 +63,8 @@ class field(Screen):
                 self.color = (0, 0, 128)
             elif txt != field.end_pos and txt != field.start_pos and self.background_color != [152, 255, 152, 1.0]:
                 self.opacity = 0
+                x,y = txt
+                field.matrix[y+1][x+1] = 0
                 field.selected_buttons.pop(txt)
 
     def Choose_Algorithm(self, DoneLayout = 0):
@@ -112,6 +114,7 @@ class field(Screen):
 
     def Search_And_Visualise(self, st, nd, matrix, trash):
         using = field.using
+        field.matrix = matrix
         for y, x in field.selected_buttons.keys():
             if matrix[x + 1][y + 1] == 0:
                 matrix[x + 1][y + 1] = 3
@@ -171,4 +174,8 @@ TODO LIST:
 4.1 done Сделать ПЛАВНУЮ визуализацию поиска пути в графе
 5. нет смысла, а жаль( Сделать нормальный ui в гм.
 6. Сделать нормальный ui в рисовке
+7. Всё в одном классе... это неудобно читать. Исправить!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+8. Приходится координаты писать в имени кнопки. Исправить.
+9. Я узнал про декораторы. Применить.
+10. Тут в логике провалы местами. Многие вещи лишний раз делаю и не очень красиво. Переделать.
 """
