@@ -5,30 +5,28 @@
             text: 'go'
             on_release:
                 root.manager.transition.direction = 'left'
-                root.manager.current = 'field'
-        Button:
-            text: 'nothing'
-<field>:
+                root.manager.current = 'Field'
+
+<Field>:
     RelativeLayout:
         BoxLayout:
-            id: DoneLayout
+            id: done_layout
             size_hint: (1, 0.1)
             pos: (0, 0)
             pos_hint:{"left":1,"top":1}
             orientation: 'horizontal'
             Button:
                 text: 'Choose start pos, then end pos, then walls, then press me'
-                on_release:
-                    root.Choose_Algorithm(DoneLayout)
+                on_press:
+                    root.add_search_buttons(done_layout)
         GridLayout:
-            id: ButtonLayout
+            id: button_layout
             size_hint: (1,0.9)
             pos:(1,1)
-            rows: 18
-            cols: 32
+            rows: root.window_size[1]//100
+            cols: root.window_size[0]//100
             Button:
-                text: 'Init Buttons'
                 on_release:
-                    root.init_buttons(ButtonLayout)
+                    root.init_buttons(button_layout)
 
 

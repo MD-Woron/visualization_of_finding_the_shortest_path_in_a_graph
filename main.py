@@ -10,172 +10,152 @@ from kivy.clock import Clock
 
 from functools import partial
 
+from kivy.core.window import Window
+
+
 Builder.load_file("my.kv")
+
+
+class NewButton(Button):
+    cords = (0, 0)
 
 
 class Menu(Screen):
     pass
 
 
-class field(Screen):
-    ButtonLayout = 0
+class Field(Screen):
+    window_size = Window.size
     selected_buttons = {}
     buttons = {}
-    start_pos = 0
-    end_pos = 0
-    matrix = []
+    start_pos = ()
+    end_pos = ()
+    matrix = list(([0] * (Window.size[0]//100+2) for _ in range(Window.size[1]//100+2)))
     queue = []
     using = set()
     is_false = 1
-    way_not_searched = True
+    way_not_searched = 2
 
-    DoneLayout = 0
+    @staticmethod
+    def add_search_buttons(done_layout):
+        done_layout.clear_widgets()
+        done_layout.add_widget(Button(text='BFS', on_release=Field.init_matrix_for_search))
+        done_layout.add_widget(Button(text='Del all', on_release=Field.del_all))
 
-    def init_buttons(self, ButtonLayout):
-        field.ButtonLayout = ButtonLayout
-        ButtonLayout.clear_widgets()
-        for col in range(18):
-            for row in range(32):
-                field.buttons[(row, col)] = (Button(text=f'{row, col}', on_release=field.make_wall, opacity=0))
-        for col in range(18):
-            for row in range(32):
-                ButtonLayout.add_widget(field.buttons[(row, col)])
+    @staticmethod
+    def init_buttons(button_layout):
+        button_layout.clear_widgets()
+        for col in range(Window.size[1]//100):
+            for row in range(Window.size[0]//100):
+                Field.buttons[(row, col)] = (NewButton(on_release=Field.make_wall, opacity=0))
+                Field.buttons[(row, col)].cords = (row, col)
+                button_layout.add_widget(Field.buttons[(row, col)])
 
     def make_wall(self):
-        txt = tuple((int(self.text[1:-1].split()[0][:-1]), int(self.text[1:-1].split()[1])))
-        if field.start_pos == 0:#len(field.selected_buttons) == 0 and not (txt in field.selected_buttons):
+        if not Field.start_pos:
             self.background_color = (0, 128, 0)
             self.opacity = 1
-            field.selected_buttons[txt] = self
-            field.start_pos = txt
+            Field.selected_buttons[self.cords] = self
+            Field.start_pos = self.cords
             self.color = (0, 128, 0)
-        elif field.end_pos == 0:#len(field.selected_buttons) == 1 and not (txt in field.selected_buttons):
+        elif not Field.end_pos and self.cords != Field.start_pos:
             self.background_color = (128, 0, 0)
             self.opacity = 1
-            field.selected_buttons[txt] = self
-            field.end_pos = txt
+            Field.selected_buttons[self.cords] = self
+            Field.end_pos = self.cords
             self.color = (128, 0, 0)
         else:
-            if not (txt in field.selected_buttons) and self.opacity == 0:
+            if self.cords not in Field.selected_buttons and self.opacity == 0:
                 self.background_color = (0, 0, 128)
                 self.opacity = 1
-                field.selected_buttons[txt] = self
+                Field.selected_buttons[self.cords] = self
                 self.color = (0, 0, 128)
-            elif txt != field.end_pos and txt != field.start_pos and self.background_color != [152, 255, 152, 1.0]:
+            elif self.cords != Field.end_pos and self.cords != Field.start_pos and self.cords in Field.selected_buttons:
                 self.opacity = 0
-                x,y = txt
-                field.matrix[y+1][x+1] = 0
-                field.selected_buttons.pop(txt)
+                x,y = self.cords
+                Field.matrix[y+1][x+1] = 0
+                Field.selected_buttons.pop(self.cords)
 
-    def Choose_Algorithm(self, DoneLayout = 0):
-        if field.DoneLayout != 0:
-            DoneLayout = field.DoneLayout
-        DoneLayout.clear_widgets()
-        DoneLayout.add_widget(Button(text='BFS', on_release=field.InitMatrixForSearch))
-        DoneLayout.add_widget(Button(text='Dijkstra', on_release=field.InitMatrixForSearch))
-        DoneLayout.add_widget(Button(text='Del all', on_release=field.DelAll))
-        field.DoneLayout = DoneLayout
-
-    def DelAll(self):
-        field.way_not_searched = False #FIXME. Приходится нажимать 2 раза, т.к. поставлена задержка на вывод
-        # за этим ещё тянется баг, из-за которого после нажатия на Del All можно словить момент и успеть нажать на BFS
-        # после этого продолжится старый поиск пути в графе
-        for elem in field.buttons.values():
+    def del_all(self):
+        if Field.way_not_searched != 0:
+            Field.way_not_searched -= 1
+        for elem in Field.buttons.values():
             elem.opacity = 0
-        field.selected_buttons = {}
-        field.start_pos = 0
-        field.end_pos = 0
-        field.queue = []
-        field.using = set()
-        field.is_false = 1
-        field.InitMatrixForSearch(self)
-        field.DoneLayout.clear_widgets()
-        field.DoneLayout.add_widget(Button(text = 'Choose start pos, then end pos, then walls, then press me', on_release = field.Choose_Algorithm))
+        Field.selected_buttons = {}
+        Field.start_pos = 0
+        Field.end_pos = 0
+        Field.queue = []
+        Field.using = set()
+        Field.matrix = list(([0] * (Window.size[0]//100+2) for _ in range(Window.size[1]//100+2)))
+        if Field.way_not_searched:
+            Clock.schedule_once(partial(Field.del_all), 0.4)
 
-    def InitMatrixForSearch(self):
-        matrix = list(([0] * 34 for i in range(20)))
-        st = field.start_pos
-        nd = field.end_pos
-        if st !=0 and nd != 0:
-            field.way_not_searched = True
+    @staticmethod
+    def init_matrix_for_search(self):
+        matrix = list(([0] * (Window.size[0]//100+2) for _ in range(Window.size[1]//100+2)))
+        st = Field.start_pos
+        nd = Field.end_pos
+        if st != 0 and nd != 0:
+            Field.way_not_searched = 2
             matrix[st[1] + 1][st[0] + 1] = 1
             matrix[nd[1] + 1][nd[0] + 1] = 2
             st = (st[1] + 1, st[0] + 1)
             nd = (nd[1] + 1, nd[0] + 1)
-            for y, x in field.selected_buttons.keys():
+            for y, x in Field.selected_buttons.keys():
                 if matrix[x + 1][y + 1] == 0:
                     matrix[x + 1][y + 1] = 3
 
-            def Visualise_Delay(trash):
-                Clock.schedule_once(partial(field.Search_And_Visualise, self, st, nd, matrix), field.is_false)
-                if field.way_not_searched:
-                    Clock.schedule_once(Visualise_Delay, field.is_false)
-            Visualise_Delay(0)
+            def visualise_delay(trash):
+                Clock.schedule_once(partial(Field.search_and_visualise, self, st, nd, matrix), Field.is_false)
+                if Field.way_not_searched == 2:
+                    Clock.schedule_once(visualise_delay, Field.is_false)
+            visualise_delay(0)
 
-    def Search_And_Visualise(self, st, nd, matrix, trash):
-        using = field.using
-        field.matrix = matrix
-        for y, x in field.selected_buttons.keys():
+    def search_and_visualise(self, st, nd, matrix, trash):
+        using = Field.using
+        Field.matrix = matrix
+        for y, x in Field.selected_buttons.keys():
             if matrix[x + 1][y + 1] == 0:
                 matrix[x + 1][y + 1] = 3
         if self.text == 'BFS':
-            if not(field.queue):
-                field.queue = [(st, [])]
-                queue = field.queue
-                #print(st,nd)
+            if not Field.queue:
+                Field.queue = [(st, [])]
+                queue = Field.queue
             else:
-                queue = field.queue
+                queue = Field.queue
             if queue:
                 (x, y), prd = queue.pop(0)
                 if (x, y) == nd:
-                    #print(prd)
-                    #print(using)
-                    field.way_not_searched = False
+                    Field.way_not_searched = 0
                     for elem in prd:
-                        x,y = elem
-                        field.buttons[(y - 1, x - 1)].background_color = (0, 255, 0)
-                        field.buttons[(y - 1, x - 1)].opacity = 1
-                        #field.buttons[(y - 1, x - 1)].text = ''
-                if matrix[x][y] != 3 and 0 < x < 19 and 0 < y < 33 and (x, y) not in using:
+                        x, y = elem
+                        Field.buttons[(y - 1, x - 1)].background_color = (0, 255, 0)
+                        Field.buttons[(y - 1, x - 1)].opacity = 1
+                if matrix[x][y] != 3 and 0 < x < Window.size[1]//100+1 and 0 < y < Window.size[0]//100+1 \
+                        and (x, y) not in using:
                     queue += [((x + 1, y), prd + [(x, y)]), ((x, y + 1), prd + [(x, y)]), ((x - 1, y), prd + [(x, y)]),
                               ((x, y - 1), prd + [(x, y)])]
-                    field.buttons[(y - 1, x - 1)].background_color = (152, 255, 152)
-                    field.buttons[(y - 1, x - 1)].opacity = 1
-                    #field.buttons[(y - 1, x - 1)].text = ''
+                    Field.buttons[(y - 1, x - 1)].background_color = (152, 255, 152)
+                    Field.buttons[(y - 1, x - 1)].opacity = 1
                     matrix[x][y] = 6
                     using.add((x, y))
-                    field.is_false = 0.1
-                    #print(using)
-                else: field.is_false = 0
-        #for x in matrix:
-        #    pass
-        #    print(x)
-        if self.text == 'JPS':
-            pass
+                    Field.is_false = 0.1
+                else:
+                    Field.is_false = 0
 
 
-class app(App):
+class MyApp(App):
     screen = ScreenManager()
 
     def build(self):
         self.screen.add_widget(Menu(name='Menu'))
-        self.screen.add_widget(field(name='field'))
+        self.screen.add_widget(Field(name='Field'))
         return self.screen
 
 
-app().run()
+MyApp().run()
+
 """
 TODO LIST:
-0.  done писец без ООП тяжко.. тут говнокод на говнокоде. Надо учить его, а потом переписывать
-1.  done Сделать переход с главного экрана на экран выбора пути по кнопке 
-2.  done Сделать рисовку пути 
-3.  done Сделать поиск пути в графе
-4.  done Сделать визуализацию поиска пути в графе
-4.1 done Сделать ПЛАВНУЮ визуализацию поиска пути в графе
-5. нет смысла, а жаль( Сделать нормальный ui в гм.
-6. Сделать нормальный ui в рисовке
-7. Всё в одном классе... это неудобно читать. Исправить!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-8. Приходится координаты писать в имени кнопки. Исправить.
-9. Я узнал про декораторы. Применить.
-10. Тут в логике провалы местами. Многие вещи лишний раз делаю и не очень красиво. Переделать.
+Сделать норм кнопки и норм UI
 """
